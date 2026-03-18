@@ -1,24 +1,101 @@
-import logo from './logo.svg';
-import './App.css';
+// App.js
+import "./App.css";
+import { useState, useEffect } from "react"; 
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+import HomeGateway from "./components/HomeGateway";
+import Login from "./components/Login";
+import BookingPage from "./components/BookingPage";
+import Dashboard from "./components/Dashboard";
+import Reservations from "./components/Reservations";
+import Settings from "./components/Settings";
+import About from "./components/About"; 
 
 function App() {
+  const [activePage, setActivePage] = useState("dashboard");
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [reservations, setReservations] = useState([]);
+  const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem("isLoggedIn") === "true");
+
+  useEffect(() => { localStorage.setItem("hotelName", hotelName); }, [hotelName]);
+
+  const [tables] = useState([
+    { number: 1, seats: 2, status: "Available" }, { number: 2, seats: 2, status: "Available" },
+    { number: 3, seats: 4, status: "Available" }, { number: 4, seats: 4, status: "Available" },
+    { number: 5, seats: 6, status: "Available" }, { number: 6, seats: 6, status: "Available" },
+    { number: 7, seats: 2, status: "Available" }, { number: 8, seats: 2, status: "Available" },
+    { number: 9, seats: 4, status: "Available" }, { number: 10, seats: 4, status: "Available" },
+    { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
+  ]);
+
+  useEffect(() => {
+  const fetchReservations = async () => {
+    try {
+      const API = process.env.REACT_APP_API_URL;
+
+      const res = await fetch(`${API}/reservations`);   // ✅ FIX
+
+      if (res.ok) {
+        const data = await res.json();
+        setReservations(data);
+      }
+    } catch (err) {
+      console.log("Fetch error:", err);
+    }
+  };
+
+  fetchReservations();
+}, []);
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem("isLoggedIn");
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={
+          isLoggedIn ? <Navigate to="/admin" /> : <HomeGateway hotelName={hotelName} />
+        } />
+
+        <Route path="/login" element={
+          isLoggedIn ? <Navigate to="/admin" /> : 
+          <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
+        } />
+
+        <Route path="/book" element={
+          <BookingPage 
+            hotelName={hotelName} tables={tables} 
+            setSelectedTable={setSelectedTable} setActivePage={setActivePage} 
+            activePage={activePage} selectedTable={selectedTable} 
+            setReservations={setReservations} reservations={reservations} 
+          />
+        } />
+
+        <Route path="/admin" element={
+          isLoggedIn ? (
+            <div className="app">
+              <aside className="sidebar">
+                <h2>🍽 Admin</h2>
+                <ul>
+                  <li onClick={() => setActivePage("dashboard")} className={activePage === "dashboard" ? "active" : ""}>Dashboard</li>
+                  <li onClick={() => setActivePage("reservations")} className={activePage === "reservations" ? "active" : ""}>Reservations</li>
+                  <li onClick={() => setActivePage("about")} className={activePage === "about" ? "active" : ""}>About Us</li>
+                  <li onClick={handleLogout} style={{marginTop: 'auto', color: '#ff4d4d', cursor: 'pointer'}}>Logout</li>
+                </ul>
+              </aside>
+              <main className="main">
+                {activePage === "dashboard" && <Dashboard reservations={reservations} hotelName={hotelName} onOpenSettings={() => setActivePage("settings")} />}
+                {activePage === "reservations" && <Reservations reservations={reservations} setReservations={setReservations} />}
+                {activePage === "settings" && <Settings hotelName={hotelName} setHotelName={setHotelName} setActivePage={setActivePage} />}
+                {activePage === "about" && <About hotelName={hotelName} />}
+              </main>
+            </div>
+          ) : <Navigate to="/login" />
+        } />
+      </Routes>
+    </Router>
   );
 }
 
