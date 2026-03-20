@@ -22,6 +22,7 @@ function TableDetails({
     "07:30 PM","08:00 PM","08:30 PM","09:00 PM"
   ];
 
+  // 🛠️ SAFE LOGIC: App crash aagama irukka try-catch and split use pannirukaen
   const bookedTimesForThisTable = date 
     ? (reservations || [])
         .filter((r) => {
@@ -31,14 +32,13 @@ function TableDetails({
 
           let dbDate = "";
           try {
-            const parsedDate = new Date(r.booking_date);
-            dbDate = parsedDate.toLocaleDateString('en-CA');
+            // Check if it's already a ISO string (YYYY-MM-DD)
+            dbDate = String(r.booking_date).split("T")[0];
           } catch (e) {
-            dbDate = String(r.booking_date).substring(0, 10);
+            dbDate = "";
           }
 
-          const isSameDate = dbDate === date;
-          return isSameTable && isSameDate;
+          return isSameTable && dbDate === date;
         })
         .map((r) => r.booking_time ? String(r.booking_time).trim() : "")
     : [];
@@ -55,7 +55,8 @@ function TableDetails({
     }
 
     try {
-      const API = process.env.REACT_APP_API_URL;
+      // 🚀 API URL Fallback
+      const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
       const res = await fetch(`${API}/reserve`, {
         method: "POST",
@@ -73,6 +74,7 @@ function TableDetails({
       const data = await res.json();
 
       if (res.ok) {
+        // UI State Update
         setReservations([
           ...reservations,
           {
@@ -88,7 +90,8 @@ function TableDetails({
         ]);
 
         alert(`✅ Table ${table.number} Reserved!`);
-        setActivePage("reservations");
+        // Refresh and go back to tables
+        setActivePage("tables"); 
       } else {
         alert("Booking failed: " + (data.message || "Unknown error"));
       }
@@ -113,23 +116,24 @@ function TableDetails({
           <label className="input-label">Select Date</label>
           <input
             type="date"
+            className="input-field"
             value={date}
             onChange={(e) => { setDate(e.target.value); setTime(""); }}
             min={new Date().toLocaleDateString('en-CA')}
           />
 
           <label className="input-label">Customer Info</label>
-          <input placeholder="Customer Name" value={name} onChange={(e) => setName(e.target.value)} />
-          <input placeholder="Mobile Number" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength="10" />
+          <input className="input-field" placeholder="Customer Name" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="input-field" placeholder="Mobile Number" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength="10" />
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
               <label className="input-label">Guests</label>
-              <input type="number" placeholder="No." value={guests} onChange={(e) => setGuests(e.target.value)} min="1" max={table?.seats + 2} />
+              <input className="input-field" type="number" value={guests} onChange={(e) => setGuests(e.target.value)} min="1" max={table?.seats + 2} />
             </div>
             <div style={{ flex: 2 }}>
               <label className="input-label">Time Slot</label>
-              <select value={time} onChange={(e) => setTime(e.target.value)} disabled={!date}>
+              <select className="input-field" value={time} onChange={(e) => setTime(e.target.value)} disabled={!date}>
                 <option value="">{date ? "Select Time" : "First Select Date"}</option>
                 {timeSlots.map((t, i) => {
                   const isBooked = bookedTimesForThisTable.includes(t);
@@ -149,4 +153,5 @@ function TableDetails({
     </div>
   );
 }
+
 export default TableDetails;
