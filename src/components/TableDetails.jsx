@@ -1,7 +1,12 @@
 import { useState } from "react";
 import "../App.css";
 
-function TableDetails({ table, setReservations, reservations = [], setActivePage }) {
+function TableDetails({
+  table,
+  setReservations,
+  reservations = [],
+  setActivePage,
+}) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [time, setTime] = useState("");
@@ -21,14 +26,19 @@ function TableDetails({ table, setReservations, reservations = [], setActivePage
     ? (reservations || [])
         .filter((r) => {
           if (!r || !r.booking_date) return false;
+
           const isSameTable = String(r.table_number) === String(table?.number);
+
           let dbDate = "";
           try {
-            dbDate = new Date(r.booking_date).toLocaleDateString('en-CA');
+            const parsedDate = new Date(r.booking_date);
+            dbDate = parsedDate.toLocaleDateString('en-CA');
           } catch (e) {
             dbDate = String(r.booking_date).substring(0, 10);
           }
-          return isSameTable && dbDate === date;
+
+          const isSameDate = dbDate === date;
+          return isSameTable && isSameDate;
         })
         .map((r) => r.booking_time ? String(r.booking_time).trim() : "")
     : [];
@@ -39,16 +49,21 @@ function TableDetails({ table, setReservations, reservations = [], setActivePage
       return;
     }
 
-    const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
+    if (bookedTimesForThisTable.includes(time)) {
+      alert("Sorry!, This slot is already booked. Try another slot.");
+      return;
+    }
 
     try {
+      const API = process.env.REACT_APP_API_URL;
+
       const res = await fetch(`${API}/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           table_number: table.number,
           customer_name: name,
-          phone_number: mobile, // ✅ Consistently using phone_number
+          mobile: mobile,
           booking_date: date,
           booking_time: time,
           guests_count: parseInt(guests),
@@ -64,21 +79,23 @@ function TableDetails({ table, setReservations, reservations = [], setActivePage
             id: data.insertId,
             table_number: table.number,
             customer_name: name,
-            phone_number: mobile,
+            mobile,
             booking_date: date,
             booking_time: time,
             guests_count: guests,
+            payment_status: "PAID",
           },
         ]);
 
         alert(`✅ Table ${table.number} Reserved!`);
-        // Back to tables view after success
-        setActivePage("tables");
+        setActivePage("reservations");
       } else {
-        alert("Booking failed: " + (data.message || "Slot already taken"));
+        alert("Booking failed: " + (data.message || "Unknown error"));
       }
+
     } catch (err) {
-      alert("❌ Server connection lost. Check Railway logs.");
+      console.error("Fetch Error:", err);
+      alert("Server is not connected.");
     }
   };
 
@@ -89,6 +106,8 @@ function TableDetails({ table, setReservations, reservations = [], setActivePage
           <button onClick={() => setActivePage("tables")} className="back-icon-btn"> ⬅ </button>
           <h2>Table {table?.number} Booking</h2>
         </div>
+
+        <p className="subtitle">Confirm your slot for a great dining experience.</p>
 
         <div className="input-group">
           <label className="input-label">Select Date</label>
@@ -103,29 +122,31 @@ function TableDetails({ table, setReservations, reservations = [], setActivePage
           <input placeholder="Customer Name" value={name} onChange={(e) => setName(e.target.value)} />
           <input placeholder="Mobile Number" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength="10" />
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
               <label className="input-label">Guests</label>
-              <input type="number" value={guests} onChange={(e) => setGuests(e.target.value)} min="1" max={table?.seats + 2} />
+              <input type="number" placeholder="No." value={guests} onChange={(e) => setGuests(e.target.value)} min="1" max={table?.seats + 2} />
             </div>
             <div style={{ flex: 2 }}>
               <label className="input-label">Time Slot</label>
               <select value={time} onChange={(e) => setTime(e.target.value)} disabled={!date}>
                 <option value="">{date ? "Select Time" : "First Select Date"}</option>
-                {timeSlots.map((t, i) => (
-                  <option key={i} value={t} disabled={bookedTimesForThisTable.includes(t)}>
-                    {t} {bookedTimesForThisTable.includes(t) ? "🔴 (Full)" : "🟢 (Open)"}
-                  </option>
-                ))}
+                {timeSlots.map((t, i) => {
+                  const isBooked = bookedTimesForThisTable.includes(t);
+                  return (
+                    <option key={i} value={t} disabled={isBooked} style={{ color: isBooked ? '#ff4d4d' : 'inherit' }}>
+                      {t} {isBooked ? "🔴 (Booked)" : "🟢 (Available)"}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
         </div>
 
-        <button className="pay-btn" onClick={handleReserve} style={{ marginTop: '20px' }}>Confirm Reservation</button>
+        <button className="pay-btn" onClick={handleReserve}>Pay & Reserve</button>
       </div>
     </div>
   );
 }
-
 export default TableDetails;
