@@ -1,152 +1,131 @@
-import React from 'react';
+import { useState } from "react";
 import "../App.css";
 
-function Reservations({ reservations = [], setReservations }) {
-  
-  // 🛠️ DELETE/CHECKOUT Logic
-  const handleDelete = async (tableNumber, bookingTime, rawBookingDate) => {
-    let correctDate = rawBookingDate;
+function TableDetails({ table, setReservations, reservations = [], setActivePage }) {
+  const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [time, setTime] = useState("");
+  const [date, setDate] = useState("");
+  const [guests, setGuests] = useState(table?.seats || "");
 
-    try {
-      correctDate = new Date(rawBookingDate).toLocaleDateString('en-CA');
-    } catch (e) {
-      correctDate = String(rawBookingDate).split("T")[0];
+  const timeSlots = [
+    "09:30 AM","10:00 AM","10:30 AM","11:00 AM",
+    "11:30 AM","12:00 PM","12:30 PM","01:00 PM",
+    "01:30 PM","02:00 PM","02:30 PM","03:00 PM",
+    "03:30 PM","04:00 PM","04:30 PM","05:00 PM",
+    "05:30 PM","06:00 PM","06:30 PM","07:00 PM",
+    "07:30 PM","08:00 PM","08:30 PM","09:00 PM"
+  ];
+
+  const bookedTimesForThisTable = date 
+    ? (reservations || [])
+        .filter((r) => {
+          if (!r || !r.booking_date) return false;
+          const isSameTable = String(r.table_number) === String(table?.number);
+          let dbDate = "";
+          try {
+            dbDate = new Date(r.booking_date).toLocaleDateString('en-CA');
+          } catch (e) {
+            dbDate = String(r.booking_date).substring(0, 10);
+          }
+          return isSameTable && dbDate === date;
+        })
+        .map((r) => r.booking_time ? String(r.booking_time).trim() : "")
+    : [];
+
+  const handleReserve = async () => {
+    if (!name || !mobile || !time || !date || !guests) {
+      alert("Please fill all details bro! 📝");
+      return;
     }
 
-    if (!window.confirm(`Checkout Table ${tableNumber} for ${correctDate}?`)) return;
+    const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
     try {
-      const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
+      const res = await fetch(`${API}/reserve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table_number: table.number,
+          customer_name: name,
+          phone_number: mobile, // ✅ Consistently using phone_number
+          booking_date: date,
+          booking_time: time,
+          guests_count: parseInt(guests),
+        }),
+      });
 
-      const res = await fetch(
-        `${API}/reserve/${tableNumber}/${correctDate}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      let data = {};
-      try {
-        data = await res.json();
-      } catch (e) {}
+      const data = await res.json();
 
       if (res.ok) {
-        const updatedReservations = reservations.filter(
-          (r) =>
-            !(
-              r.table_number === tableNumber &&
-              r.booking_time === bookingTime &&
-              r.booking_date === rawBookingDate
-            )
-        );
+        setReservations([
+          ...reservations,
+          {
+            id: data.insertId,
+            table_number: table.number,
+            customer_name: name,
+            phone_number: mobile,
+            booking_date: date,
+            booking_time: time,
+            guests_count: guests,
+          },
+        ]);
 
-        setReservations(updatedReservations);
-        alert("✅ Checked out Successfully!");
+        alert(`✅ Table ${table.number} Reserved!`);
+        // Back to tables view after success
+        setActivePage("tables");
       } else {
-        alert("❌ Fail: " + (data.message || "Record not found"));
+        alert("Booking failed: " + (data.message || "Slot already taken"));
       }
     } catch (err) {
-      console.error("Delete Error:", err);
-      alert("❌ Server is not reachable.");
+      alert("❌ Server connection lost. Check Railway logs.");
     }
   };
 
-  // 🚀 SORTING LOGIC
-  const sortedData = [...reservations].sort((a, b) => {
-    const dateA = new Date(a.booking_date);
-    const dateB = new Date(b.booking_date);
-
-    if (dateA - dateB !== 0) return dateA - dateB;
-
-    const timeToMinutes = (timeStr) => {
-      if (!timeStr) return 0;
-
-      const [time, modifier] = timeStr.split(" ");
-      let [hours, minutes] = time.split(":");
-
-      hours = parseInt(hours, 10);
-      minutes = parseInt(minutes, 10);
-
-      if (hours === 12) hours = 0;
-      if (modifier === "PM") hours += 12;
-
-      return hours * 60 + minutes;
-    };
-
-    return (
-      timeToMinutes(a.booking_time) -
-      timeToMinutes(b.booking_time)
-    );
-  });
-
   return (
-    <div className="reservations-page">
-      <div className="reservation-header">
-        <h2 className="page-title">Live Reservations 📋</h2>
-        <span className="subtitle">
-         
-        </span>
+    <div className="table-details-wrapper">
+      <div className="table-details-card">
+        <div className="booking-header">
+          <button onClick={() => setActivePage("tables")} className="back-icon-btn"> ⬅ </button>
+          <h2>Table {table?.number} Booking</h2>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">Select Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => { setDate(e.target.value); setTime(""); }}
+            min={new Date().toLocaleDateString('en-CA')}
+          />
+
+          <label className="input-label">Customer Info</label>
+          <input placeholder="Customer Name" value={name} onChange={(e) => setName(e.target.value)} />
+          <input placeholder="Mobile Number" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength="10" />
+
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <div style={{ flex: 1 }}>
+              <label className="input-label">Guests</label>
+              <input type="number" value={guests} onChange={(e) => setGuests(e.target.value)} min="1" max={table?.seats + 2} />
+            </div>
+            <div style={{ flex: 2 }}>
+              <label className="input-label">Time Slot</label>
+              <select value={time} onChange={(e) => setTime(e.target.value)} disabled={!date}>
+                <option value="">{date ? "Select Time" : "First Select Date"}</option>
+                {timeSlots.map((t, i) => (
+                  <option key={i} value={t} disabled={bookedTimesForThisTable.includes(t)}>
+                    {t} {bookedTimesForThisTable.includes(t) ? "🔴 (Full)" : "🟢 (Open)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button className="pay-btn" onClick={handleReserve} style={{ marginTop: '20px' }}>Confirm Reservation</button>
       </div>
-
-      {sortedData.length === 0 ? (
-        <div className="empty-state">
-          <p>There are no bookings available!</p>
-        </div>
-      ) : (
-        <div className="reservation-container">
-          <table className="reservation-table">
-            <thead>
-              <tr>
-                <th>Table</th>
-                <th>Customer</th>
-                <th>Mobile</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {sortedData.map((r, index) => {
-                let displayDate = r.booking_date;
-
-                try {
-                  displayDate = new Date(r.booking_date).toLocaleDateString("en-CA");
-                } catch (e) {
-                  displayDate = String(r.booking_date).split("T")[0];
-                }
-
-                return (
-                  <tr key={index}>
-                    <td className="table-id">Table {r.table_number}</td>
-                    <td>{r.customer_name}</td>
-                    <td>{r.mobile}</td>
-                    <td className="date-cell">{displayDate}</td>
-                    <td className="time-cell">{r.booking_time}</td>
-                    <td>
-                      <button
-                        className="delete-btn"
-                        onClick={() =>
-                          handleDelete(
-                            r.table_number,
-                            r.booking_time,
-                            r.booking_date
-                          )
-                        }
-                      >
-                        CHECKOUT
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-
-          </table>
-        </div>
-      )}
     </div>
   );
 }
 
-export default Reservations;
+export default TableDetails;
