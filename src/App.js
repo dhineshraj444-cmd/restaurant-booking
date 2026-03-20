@@ -16,13 +16,12 @@ function App() {
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
-  // 🛠️ Safety check for Login status (Boolean conversion)
+  // 🛠️ Safety check for Login status
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const saved = localStorage.getItem("isLoggedIn");
     return saved === "true"; 
   });
 
-  // Direct Railway Backend URL
   const API_URL = "https://sunny-sparkle-production-af43.up.railway.app";
 
   useEffect(() => { 
@@ -39,23 +38,23 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
-  // 🛠️ Fetch Reservations with Safety Array check
-  useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        const res = await fetch(`${API_URL}/reservations`);
-        if (res.ok) {
-          const data = await res.json();
-          // Backend data-va apdiyae set panrom
-          setReservations(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setReservations([]); 
+  // 🛠️ Updated Fetch Logic: Triggered on refresh and page changes
+  const fetchReservations = async () => {
+    try {
+      const res = await fetch(`${API_URL}/reservations`);
+      if (res.ok) {
+        const data = await res.json();
+        // Ensuring it's always an array to prevent .map errors
+        setReservations(Array.isArray(data) ? data : []);
       }
-    };
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchReservations();
-  }, [API_URL]);
+  }, [API_URL, activePage]); // activePage maathunaalum data fetch aagum
 
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -66,15 +65,12 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 🏠 Customer Gateway */}
         <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
-        {/* 🔑 Admin Login */}
         <Route path="/login" element={
           isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
         } />
 
-        {/* 📅 Customer Booking Page */}
         <Route path="/book" element={
           <BookingPage 
             hotelName={hotelName} 
@@ -88,7 +84,6 @@ function App() {
           />
         } />
 
-        {/* 👨‍💼 Protected Admin Panel */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
@@ -102,9 +97,26 @@ function App() {
                 </ul>
               </aside>
               <main className="main">
-                {activePage === "dashboard" && <Dashboard reservations={reservations || []} hotelName={hotelName} onOpenSettings={() => setActivePage("settings")} />}
-                {activePage === "reservations" && <Reservations reservations={reservations || []} setReservations={setReservations} />}
-                {activePage === "settings" && <Settings hotelName={hotelName} setHotelName={setHotelName} setActivePage={setActivePage} />}
+                {activePage === "dashboard" && (
+                  <Dashboard 
+                    reservations={reservations || []} 
+                    hotelName={hotelName} 
+                    onOpenSettings={() => setActivePage("settings")} 
+                  />
+                )}
+                {activePage === "reservations" && (
+                  <Reservations 
+                    reservations={reservations || []} 
+                    setReservations={setReservations} 
+                  />
+                )}
+                {activePage === "settings" && (
+                  <Settings 
+                    hotelName={hotelName} 
+                    setHotelName={setHotelName} 
+                    setActivePage={setActivePage} 
+                  />
+                )}
                 {activePage === "about" && <About hotelName={hotelName} />}
               </main>
             </div>
