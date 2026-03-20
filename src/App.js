@@ -12,7 +12,6 @@ import About from "./components/About";
 
 function App() {
   const [activePage, setActivePage] = useState("dashboard");
-  const [selectedTable, setSelectedTable] = useState(null);
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
@@ -60,26 +59,21 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 1. Home Page */}
         <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
-        {/* 2. Login Page */}
         <Route path="/login" element={
           isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
         } />
 
-        {/* 3. Customer Booking Page - Clear separate route */}
         <Route path="/book" element={
           <BookingPage 
             hotelName={hotelName} 
             tables={tables} 
-            setSelectedTable={setSelectedTable} 
             setReservations={setReservations} 
             reservations={reservations} 
           />
         } />
 
-        {/* 4. Admin Panel - Purely protected */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
