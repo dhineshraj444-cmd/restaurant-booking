@@ -32,7 +32,7 @@ function App() {
   useEffect(() => {
   const fetchReservations = async () => {
     try {
-      const API = process.env.REACT_APP_API_URL;
+      const API_URL = "https://sunny-sparkle-production-af43.up.railway.app";
 
       const res = await fetch(`${API}/reservations`);   // ✅ FIX
 
