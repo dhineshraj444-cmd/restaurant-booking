@@ -16,9 +16,16 @@ function App() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
-  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem("isLoggedIn") === "true");
+  
+  // Default-ah false veippom, appo thaan Customer page mudhala varum
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => { localStorage.setItem("hotelName", hotelName); }, [hotelName]);
+  // API URL Fallback - Idhu thaan Blank Screen-ah thadukkum
+  const API_URL = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
+
+  useEffect(() => { 
+    localStorage.setItem("hotelName", hotelName); 
+  }, [hotelName]);
 
   const [tables] = useState([
     { number: 1, seats: 2, status: "Available" }, { number: 2, seats: 2, status: "Available" },
@@ -29,24 +36,22 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
+  // Fetch Reservations from Backend
   useEffect(() => {
-  const fetchReservations = async () => {
-    try {
-      const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
-
-      const res = await fetch(`${API}/reservations`);   // ✅ FIX
-
-      if (res.ok) {
-        const data = await res.json();
-        setReservations(data);
+    const fetchReservations = async () => {
+      try {
+        const res = await fetch(`${API_URL}/reservations`);
+        if (res.ok) {
+          const data = await res.json();
+          setReservations(data);
+        }
+      } catch (err) {
+        console.log("Fetch error:", err);
       }
-    } catch (err) {
-      console.log("Fetch error:", err);
-    }
-  };
+    };
+    fetchReservations();
+  }, [API_URL]);
 
-  fetchReservations();
-}, []);
   const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem("isLoggedIn");
@@ -55,15 +60,18 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* 🏠 Home Page (Customer Gateway) */}
         <Route path="/" element={
           isLoggedIn ? <Navigate to="/admin" /> : <HomeGateway hotelName={hotelName} />
         } />
 
+        {/* 🔑 Login Page */}
         <Route path="/login" element={
           isLoggedIn ? <Navigate to="/admin" /> : 
           <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
         } />
 
+        {/* 📅 Customer Booking Page */}
         <Route path="/book" element={
           <BookingPage 
             hotelName={hotelName} tables={tables} 
@@ -73,6 +81,7 @@ function App() {
           />
         } />
 
+        {/* 👨‍💼 Admin Panel */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
