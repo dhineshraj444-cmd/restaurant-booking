@@ -12,12 +12,14 @@ import About from "./components/About";
 
 function App() {
   const [activePage, setActivePage] = useState("dashboard");
+  const [selectedTable, setSelectedTable] = useState(null);
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
-  // Submission-ku safe-ah false default veippom
+  // Login status - false default for customer first view
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem("isLoggedIn") === "true");
 
+  // Direct API URL to avoid environment variable build errors
   const API_URL = "https://sunny-sparkle-production-af43.up.railway.app";
 
   useEffect(() => { 
@@ -34,7 +36,7 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
-  // Fetch Logic
+  // Fetch all reservations from Railway
   useEffect(() => {
     const fetchReservations = async () => {
       try {
@@ -59,21 +61,29 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* 1. Customer Gateway Page */}
         <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
+        {/* 2. Login Page */}
         <Route path="/login" element={
           isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
         } />
 
+        {/* 3. Booking Page (Customer Table Selection) */}
         <Route path="/book" element={
           <BookingPage 
             hotelName={hotelName} 
             tables={tables} 
             setReservations={setReservations} 
-            reservations={reservations} 
+            reservations={reservations}
+            setSelectedTable={setSelectedTable}
+            selectedTable={selectedTable}
+            setActivePage={setActivePage}
+            activePage={activePage}
           />
         } />
 
+        {/* 4. Admin Panel Section */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
