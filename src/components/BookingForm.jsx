@@ -1,13 +1,7 @@
 import { useState } from "react";
 
 function BookingForm({ onSuccess }) {
-  const [form, setForm] = useState({
-    date: "",
-    time: "",
-    guests: "",
-    name: "",
-    phone: ""
-  });
+  const [form, setForm] = useState({ date: "", time: "", guests: "", name: "", phone: "" });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,8 +9,6 @@ function BookingForm({ onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // 🚀 Backend URL Fallback
     const API_URL = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
     try {
@@ -24,24 +16,23 @@ function BookingForm({ onSuccess }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customer_name: form.name, // ⚠️ Backend column name kooda match aaganum
+          customer_name: form.name,
           phone_number: form.phone,
           booking_date: form.date,
           booking_time: form.time,
           guests: form.guests,
-          table_number: 1 // Default-ah oru table number kuduthukkalam
+          table_number: 1 // Dynamic table selection logic can be added here
         }),
       });
 
       if (response.ok) {
         alert("Booking Successful! 🎉");
-        onSuccess(); // Success aana mattum vera page-ku poga
+        onSuccess();
       } else {
-        alert("Server error! Please try again.");
+        alert("Server Error! Data not saved.");
       }
     } catch (err) {
-      console.error("Booking Error:", err);
-      alert("Server is not connected.");
+      alert("❌ Server is not reachable.");
     }
   };
 
@@ -51,18 +42,15 @@ function BookingForm({ onSuccess }) {
       <form onSubmit={handleSubmit}>
         <input type="date" name="date" onChange={handleChange} required />
         <input type="time" name="time" onChange={handleChange} required />
-
         <select name="guests" onChange={handleChange} required>
-          <option value="">Guests</option>
-          <option value="2">2</option>
-          <option value="4">4</option>
-          <option value="6">6</option>
+          <option value="">Number of Guests</option>
+          <option value="2">2 Guests</option>
+          <option value="4">4 Guests</option>
+          <option value="6">6 Guests</option>
         </select>
-
-        <input type="text" name="name" placeholder="Your Name" onChange={handleChange} required />
-        <input type="tel" name="phone" placeholder="Phone Number" onChange={handleChange} required />
-
-        <button type="submit">Book Table</button>
+        <input type="text" name="name" placeholder="Full Name" onChange={handleChange} required />
+        <input type="tel" name="phone" placeholder="Mobile Number" onChange={handleChange} required />
+        <button type="submit" className="book-btn">Confirm Booking</button>
       </form>
     </div>
   );

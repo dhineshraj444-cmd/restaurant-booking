@@ -1,4 +1,3 @@
-// App.js
 import "./App.css";
 import { useState, useEffect } from "react"; 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
@@ -17,10 +16,10 @@ function App() {
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
-  // Default-ah false veippom, appo thaan Customer page mudhala varum
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Login status default false (Customer page first)
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem("isLoggedIn") === "true");
 
-  // API URL Fallback - Idhu thaan Blank Screen-ah thadukkum
+  // API URL with Fallback to prevent Blank Screen
   const API_URL = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
   useEffect(() => { 
@@ -36,7 +35,7 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
-  // Fetch Reservations from Backend
+  // Fetch all bookings from Railway MySQL
   useEffect(() => {
     const fetchReservations = async () => {
       try {
@@ -60,18 +59,10 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 🏠 Home Page (Customer Gateway) */}
-        <Route path="/" element={
-          isLoggedIn ? <Navigate to="/admin" /> : <HomeGateway hotelName={hotelName} />
-        } />
+        <Route path="/" element={isLoggedIn ? <Navigate to="/admin" /> : <HomeGateway hotelName={hotelName} />} />
+        
+        <Route path="/login" element={isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />} />
 
-        {/* 🔑 Login Page */}
-        <Route path="/login" element={
-          isLoggedIn ? <Navigate to="/admin" /> : 
-          <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
-        } />
-
-        {/* 📅 Customer Booking Page */}
         <Route path="/book" element={
           <BookingPage 
             hotelName={hotelName} tables={tables} 
@@ -81,7 +72,6 @@ function App() {
           />
         } />
 
-        {/* 👨‍💼 Admin Panel */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
@@ -91,7 +81,7 @@ function App() {
                   <li onClick={() => setActivePage("dashboard")} className={activePage === "dashboard" ? "active" : ""}>Dashboard</li>
                   <li onClick={() => setActivePage("reservations")} className={activePage === "reservations" ? "active" : ""}>Reservations</li>
                   <li onClick={() => setActivePage("about")} className={activePage === "about" ? "active" : ""}>About Us</li>
-                  <li onClick={handleLogout} style={{marginTop: 'auto', color: '#ff4d4d', cursor: 'pointer'}}>Logout</li>
+                  <li onClick={handleLogout} style={{marginTop: 'auto', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold'}}>Logout</li>
                 </ul>
               </aside>
               <main className="main">
