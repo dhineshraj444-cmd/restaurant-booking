@@ -16,9 +16,7 @@ function Reservations({ reservations = [], setReservations }) {
     if (!window.confirm(`Checkout Table ${tableNumber} for ${correctDate}?`)) return;
 
     try {
-      const API =
-        process.env.REACT_APP_API_URL ||
-        "https://sunny-sparkle-production-af43.up.railway.app";
+      const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
       const res = await fetch(
         `${API}/reserve/${tableNumber}/${correctDate}`,
@@ -86,7 +84,7 @@ function Reservations({ reservations = [], setReservations }) {
       <div className="reservation-header">
         <h2 className="page-title">Live Reservations 📋</h2>
         <span className="subtitle">
-          Total {reservations.length} bookings manage pannunga
+         
         </span>
       </div>
 
