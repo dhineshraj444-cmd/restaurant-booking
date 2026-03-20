@@ -3,45 +3,31 @@ import "../App.css";
 
 function Reservations({ reservations = [], setReservations }) {
   
-  // 🛠️ DELETE/CHECKOUT Logic
-  const handleDelete = async (tableNumber, bookingTime, rawBookingDate) => {
-    let correctDate = rawBookingDate;
-
-    try {
-      correctDate = new Date(rawBookingDate).toLocaleDateString('en-CA');
-    } catch (e) {
-      correctDate = String(rawBookingDate).split("T")[0];
+  // 🛠️ DELETE/CHECKOUT Logic (Fixed to use ID)
+  const handleDelete = async (id, tableNumber) => {
+    // ID check panrom
+    if (!id) {
+      alert("Error: Reservation ID missing!");
+      return;
     }
 
-    if (!window.confirm(`Checkout Table ${tableNumber} for ${correctDate}?`)) return;
+    if (!window.confirm(`Checkout Table ${tableNumber}?`)) return;
 
     try {
-      const API =
-        process.env.REACT_APP_API_URL ||
-        "https://sunny-sparkle-production-af43.up.railway.app";
+      // Backend URL
+      const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
-      const res = await fetch(
-        `${API}/reserve/${tableNumber}/${correctDate}`,
-        {
-          method: "DELETE",
-        }
-      );
+      // ✅ FIXED: Ippo table/date-ku bathila direct-ah ID-ah anupuvom
+      const res = await fetch(`${API}/reserve/${id}`, {
+        method: "DELETE",
+      });
 
       let data = {};
-      try {
-        data = await res.json();
-      } catch (e) {}
+      try { data = await res.json(); } catch (e) {}
 
       if (res.ok) {
-        const updatedReservations = reservations.filter(
-          (r) =>
-            !(
-              r.table_number === tableNumber &&
-              r.booking_time === bookingTime &&
-              r.booking_date === rawBookingDate
-            )
-        );
-
+        // ✅ UI-la irundhu antha specific ID-ah mattum filter pannalaam
+        const updatedReservations = reservations.filter((r) => r.id !== id);
         setReservations(updatedReservations);
         alert("✅ Checked out Successfully!");
       } else {
@@ -53,41 +39,30 @@ function Reservations({ reservations = [], setReservations }) {
     }
   };
 
-  // 🚀 SORTING LOGIC
+  // 🚀 SORTING LOGIC (As it is)
   const sortedData = [...reservations].sort((a, b) => {
     const dateA = new Date(a.booking_date);
     const dateB = new Date(b.booking_date);
-
     if (dateA - dateB !== 0) return dateA - dateB;
 
     const timeToMinutes = (timeStr) => {
       if (!timeStr) return 0;
-
       const [time, modifier] = timeStr.split(" ");
       let [hours, minutes] = time.split(":");
-
       hours = parseInt(hours, 10);
       minutes = parseInt(minutes, 10);
-
       if (hours === 12) hours = 0;
       if (modifier === "PM") hours += 12;
-
       return hours * 60 + minutes;
     };
 
-    return (
-      timeToMinutes(a.booking_time) -
-      timeToMinutes(b.booking_time)
-    );
+    return timeToMinutes(a.booking_time) - timeToMinutes(b.booking_time);
   });
 
   return (
     <div className="reservations-page">
       <div className="reservation-header">
         <h2 className="page-title">Live Reservations 📋</h2>
-        <span className="subtitle">
-          Total {reservations.length} bookings manage pannunga
-        </span>
       </div>
 
       {sortedData.length === 0 ? (
@@ -107,11 +82,9 @@ function Reservations({ reservations = [], setReservations }) {
                 <th>Action</th>
               </tr>
             </thead>
-
             <tbody>
-              {sortedData.map((r, index) => {
+              {sortedData.map((r) => {
                 let displayDate = r.booking_date;
-
                 try {
                   displayDate = new Date(r.booking_date).toLocaleDateString("en-CA");
                 } catch (e) {
@@ -119,7 +92,8 @@ function Reservations({ reservations = [], setReservations }) {
                 }
 
                 return (
-                  <tr key={index}>
+                  // ✅ Using r.id as key
+                  <tr key={r.id}>
                     <td className="table-id">Table {r.table_number}</td>
                     <td>{r.customer_name}</td>
                     <td>{r.mobile}</td>
@@ -128,13 +102,8 @@ function Reservations({ reservations = [], setReservations }) {
                     <td>
                       <button
                         className="delete-btn"
-                        onClick={() =>
-                          handleDelete(
-                            r.table_number,
-                            r.booking_time,
-                            r.booking_date
-                          )
-                        }
+                        // ✅ Only passing ID and Table Number
+                        onClick={() => handleDelete(r.id, r.table_number)}
                       >
                         CHECKOUT
                       </button>
@@ -143,7 +112,6 @@ function Reservations({ reservations = [], setReservations }) {
                 );
               })}
             </tbody>
-
           </table>
         </div>
       )}
