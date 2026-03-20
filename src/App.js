@@ -16,7 +16,6 @@ function App() {
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
-  // 🛠️ Safety check for Login status
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const saved = localStorage.getItem("isLoggedIn");
     return saved === "true"; 
@@ -38,13 +37,11 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
-  // 🛠️ Updated Fetch Logic: Triggered on refresh and page changes
   const fetchReservations = async () => {
     try {
       const res = await fetch(`${API_URL}/reservations`);
       if (res.ok) {
         const data = await res.json();
-        // Ensuring it's always an array to prevent .map errors
         setReservations(Array.isArray(data) ? data : []);
       }
     } catch (err) {
@@ -54,7 +51,7 @@ function App() {
 
   useEffect(() => {
     fetchReservations();
-  }, [API_URL, activePage]); // activePage maathunaalum data fetch aagum
+  }, [API_URL, activePage]);
 
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -65,6 +62,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* 🏠 Home Page (Intha component kulla About-ah pottukonga) */}
         <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
         <Route path="/login" element={
@@ -84,6 +82,7 @@ function App() {
           />
         } />
 
+        {/* 👨‍💼 Admin Panel */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
@@ -92,7 +91,7 @@ function App() {
                 <ul>
                   <li onClick={() => setActivePage("dashboard")} className={activePage === "dashboard" ? "active" : ""}>Dashboard</li>
                   <li onClick={() => setActivePage("reservations")} className={activePage === "reservations" ? "active" : ""}>Reservations</li>
-                  <li onClick={() => setActivePage("about")} className={activePage === "about" ? "active" : ""}>About Us</li>
+                  {/* ❌ About Us sidebar-la irundhu thookiyaachu */}
                   <li onClick={handleLogout} style={{marginTop: 'auto', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold'}}>Logout</li>
                 </ul>
               </aside>
@@ -117,7 +116,6 @@ function App() {
                     setActivePage={setActivePage} 
                   />
                 )}
-                {activePage === "about" && <About hotelName={hotelName} />}
               </main>
             </div>
           ) : <Navigate to="/login" />

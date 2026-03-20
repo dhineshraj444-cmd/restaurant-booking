@@ -95,7 +95,11 @@ body {
   align-items: center;
   gap: 12px;
 }
-
+.home-about-container {
+  background-color: #0f172a; /* Unga theme-ku yetha dark color */
+  padding: 40px 20px;
+  color: white;
+}
 .sidebar ul { 
   list-style: none; 
   display: flex; 
