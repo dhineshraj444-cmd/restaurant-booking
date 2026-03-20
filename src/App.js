@@ -16,15 +16,15 @@ function App() {
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
-  // Login status default false (Customer page first)
+  // Submission-ku safe-ah false default veippom
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem("isLoggedIn") === "true");
 
-  // API URL with Fallback to prevent Blank Screen
-  const API_URL = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
+  const API_URL = "https://sunny-sparkle-production-af43.up.railway.app";
 
   useEffect(() => { 
     localStorage.setItem("hotelName", hotelName); 
-  }, [hotelName]);
+    localStorage.setItem("isLoggedIn", isLoggedIn);
+  }, [hotelName, isLoggedIn]);
 
   const [tables] = useState([
     { number: 1, seats: 2, status: "Available" }, { number: 2, seats: 2, status: "Available" },
@@ -35,7 +35,7 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
-  // Fetch all bookings from Railway MySQL
+  // Fetch Logic
   useEffect(() => {
     const fetchReservations = async () => {
       try {
@@ -54,24 +54,32 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem("isLoggedIn");
+    setActivePage("dashboard");
   };
 
   return (
     <Router>
       <Routes>
-        <Route path="/" element={isLoggedIn ? <Navigate to="/admin" /> : <HomeGateway hotelName={hotelName} />} />
-        
-        <Route path="/login" element={isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />} />
+        {/* 1. Home Page */}
+        <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
+        {/* 2. Login Page */}
+        <Route path="/login" element={
+          isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
+        } />
+
+        {/* 3. Customer Booking Page - Clear separate route */}
         <Route path="/book" element={
           <BookingPage 
-            hotelName={hotelName} tables={tables} 
-            setSelectedTable={setSelectedTable} setActivePage={setActivePage} 
-            activePage={activePage} selectedTable={selectedTable} 
-            setReservations={setReservations} reservations={reservations} 
+            hotelName={hotelName} 
+            tables={tables} 
+            setSelectedTable={setSelectedTable} 
+            setReservations={setReservations} 
+            reservations={reservations} 
           />
         } />
 
+        {/* 4. Admin Panel - Purely protected */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
