@@ -16,12 +16,13 @@ function App() {
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
-  // 🛠️ Safety check for Login status
+  // 🛠️ Safety check for Login status (Boolean conversion)
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const saved = localStorage.getItem("isLoggedIn");
     return saved === "true"; 
   });
 
+  // Direct Railway Backend URL
   const API_URL = "https://sunny-sparkle-production-af43.up.railway.app";
 
   useEffect(() => { 
@@ -38,18 +39,19 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
-  // 🛠️ Safe Fetch with Error Handling
+  // 🛠️ Fetch Reservations with Safety Array check
   useEffect(() => {
     const fetchReservations = async () => {
       try {
         const res = await fetch(`${API_URL}/reservations`);
         if (res.ok) {
           const data = await res.json();
+          // Backend data-va apdiyae set panrom
           setReservations(Array.isArray(data) ? data : []);
         }
       } catch (err) {
         console.error("Fetch error:", err);
-        setReservations([]); // Error vandha empty array veippom
+        setReservations([]); 
       }
     };
     fetchReservations();
@@ -64,12 +66,15 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* 🏠 Customer Gateway */}
         <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
+        {/* 🔑 Admin Login */}
         <Route path="/login" element={
           isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
         } />
 
+        {/* 📅 Customer Booking Page */}
         <Route path="/book" element={
           <BookingPage 
             hotelName={hotelName} 
@@ -83,6 +88,7 @@ function App() {
           />
         } />
 
+        {/* 👨‍💼 Protected Admin Panel */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
@@ -91,12 +97,11 @@ function App() {
                 <ul>
                   <li onClick={() => setActivePage("dashboard")} className={activePage === "dashboard" ? "active" : ""}>Dashboard</li>
                   <li onClick={() => setActivePage("reservations")} className={activePage === "reservations" ? "active" : ""}>Reservations</li>
-                  <li onClick={() => setActivePage("about")} className={activePage === "about" ? "about" : ""}>About Us</li>
+                  <li onClick={() => setActivePage("about")} className={activePage === "about" ? "active" : ""}>About Us</li>
                   <li onClick={handleLogout} style={{marginTop: 'auto', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold'}}>Logout</li>
                 </ul>
               </aside>
               <main className="main">
-                {/* 🛠️ Components-la reservations array anuppum pothu backup array (|| []) sethukalam */}
                 {activePage === "dashboard" && <Dashboard reservations={reservations || []} hotelName={hotelName} onOpenSettings={() => setActivePage("settings")} />}
                 {activePage === "reservations" && <Reservations reservations={reservations || []} setReservations={setReservations} />}
                 {activePage === "settings" && <Settings hotelName={hotelName} setHotelName={setHotelName} setActivePage={setActivePage} />}
