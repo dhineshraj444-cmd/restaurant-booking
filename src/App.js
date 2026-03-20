@@ -8,7 +8,6 @@ import BookingPage from "./components/BookingPage";
 import Dashboard from "./components/Dashboard";
 import Reservations from "./components/Reservations";
 import Settings from "./components/Settings";
-import About from "./components/About"; 
 
 function App() {
   const [activePage, setActivePage] = useState("dashboard");
@@ -16,6 +15,7 @@ function App() {
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
+  // 🛠️ Login Status Logic
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const saved = localStorage.getItem("isLoggedIn");
     return saved === "true"; 
@@ -37,6 +37,7 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
+  // 🛠️ Fetch Logic
   const fetchReservations = async () => {
     try {
       const res = await fetch(`${API_URL}/reservations`);
@@ -62,7 +63,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 🏠 Home Page (Intha component kulla About-ah pottukonga) */}
+        {/* 🏠 Home Page - About Us details ippo intha component-kulla irukkum */}
         <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
         <Route path="/login" element={
@@ -91,7 +92,7 @@ function App() {
                 <ul>
                   <li onClick={() => setActivePage("dashboard")} className={activePage === "dashboard" ? "active" : ""}>Dashboard</li>
                   <li onClick={() => setActivePage("reservations")} className={activePage === "reservations" ? "active" : ""}>Reservations</li>
-                  {/* ❌ About Us sidebar-la irundhu thookiyaachu */}
+                  {/* ❌ About Us sidebar-la irundhu remove panniyaachu */}
                   <li onClick={handleLogout} style={{marginTop: 'auto', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold'}}>Logout</li>
                 </ul>
               </aside>
@@ -116,6 +117,7 @@ function App() {
                     setActivePage={setActivePage} 
                   />
                 )}
+                {/* ❌ About page logic-ah admin panel-la irundhu thookiyaachu */}
               </main>
             </div>
           ) : <Navigate to="/login" />
