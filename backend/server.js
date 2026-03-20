@@ -5,7 +5,7 @@ const cors = require("cors");
 
 const app = express();
 
-// ✅ CORS Settings: Vercel and Localhost allow panroom
+// ✅ CORS Settings: Vercel and Localhost allow
 app.use(cors({
   origin: ["https://restaurant-booking-teal.vercel.app", "http://localhost:3000"],
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -36,7 +36,7 @@ async function initDB() {
   }
 }
 
-/* 🧹 CLEAN OLD BOOKINGS (Daily maintenance) */
+/* 🧹 CLEAN OLD BOOKINGS (Past dates delete panroom) */
 async function cleanOldBookings() {
   if (!db) return;
   try {
@@ -47,12 +47,12 @@ async function cleanOldBookings() {
 /* ✅ HEALTH CHECK */
 app.get("/", (req, res) => res.send("Server + DB working ✅"));
 
-/* 📥 GET ALL RESERVATIONS (Frontend Compatibility Fix) */
+/* 📥 GET ALL RESERVATIONS (Modified for Today/Upcoming Logic) */
 app.get("/reservations", async (req, res) => {
   try {
     await cleanOldBookings();
     
-    // Selecting specific columns and formatting date
+    // Selecting all reservations
     const [rows] = await db.execute(`
       SELECT id, table_number, customer_name, mobile, 
       DATE_FORMAT(booking_date, '%Y-%m-%d') AS booking_date, 
@@ -61,25 +61,25 @@ app.get("/reservations", async (req, res) => {
       ORDER BY booking_date ASC, booking_time ASC
     `);
 
-    // 🔥 FIX: Directly sending the array so Frontend .map() works!
+    // 🔥 Frontend-ku direct array-va anupuroam
     res.json(rows); 
     
   } catch (err) {
     console.error("Fetch Error:", err);
-    res.status(500).json([]); // Error vandha empty array anupuvom to prevent crash
+    res.status(500).json([]); 
   }
 });
 
-/* 💳 CREATE NEW RESERVATION */
+/* 💳 CREATE NEW RESERVATION (Directly PAID) */
 app.post("/reserve", async (req, res) => {
   try {
     const { table_number, customer_name, mobile, booking_date, booking_time, guests_count } = req.body;
     
-    // Check if fields are missing
     if (!table_number || !customer_name || !mobile || !booking_date || !booking_time) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // ✅ Neenga sonna maari 'PAID' thaan default, vera options kidaiyaathu
     const [result] = await db.execute(
       `INSERT INTO reservations 
       (table_number, customer_name, mobile, booking_date, booking_time, guests, payment_status)
@@ -94,7 +94,7 @@ app.post("/reserve", async (req, res) => {
   }
 });
 
-/* ❌ DELETE RESERVATION (Checkout Logic) */
+/* ❌ DELETE RESERVATION */
 app.delete("/reserve/:id", async (req, res) => {
   try {
     const { id } = req.params;
