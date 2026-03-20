@@ -3,8 +3,9 @@ import "../App.css";
 
 function Reservations({ reservations = [], setReservations }) {
   
-  // 🛠️ DELETE Logic
+  // 🛠️ DELETE/CHECKOUT Logic (Fixed to use ID)
   const handleDelete = async (id, tableNumber) => {
+    // ID check panrom
     if (!id) {
       alert("Error: Reservation ID missing!");
       return;
@@ -13,25 +14,32 @@ function Reservations({ reservations = [], setReservations }) {
     if (!window.confirm(`Checkout Table ${tableNumber}?`)) return;
 
     try {
+      // Backend URL
       const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
+      // ✅ FIXED: Ippo table/date-ku bathila direct-ah ID-ah anupuvom
       const res = await fetch(`${API}/reserve/${id}`, {
         method: "DELETE",
       });
 
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+
       if (res.ok) {
+        // ✅ UI-la irundhu antha specific ID-ah mattum filter pannalaam
         const updatedReservations = reservations.filter((r) => r.id !== id);
         setReservations(updatedReservations);
         alert("✅ Checked out Successfully!");
       } else {
-        alert("❌ Fail to checkout.");
+        alert("❌ Fail: " + (data.message || "Record not found"));
       }
     } catch (err) {
+      console.error("Delete Error:", err);
       alert("❌ Server is not reachable.");
     }
   };
 
-  // 🚀 SORTING Logic
+  // 🚀 SORTING LOGIC (As it is)
   const sortedData = [...reservations].sort((a, b) => {
     const dateA = new Date(a.booking_date);
     const dateB = new Date(b.booking_date);
@@ -84,18 +92,17 @@ function Reservations({ reservations = [], setReservations }) {
                 }
 
                 return (
+                  // ✅ Using r.id as key
                   <tr key={r.id}>
                     <td className="table-id">Table {r.table_number}</td>
-                    <td>{r.customer_name || "N/A"}</td>
-                    
-                    {/* ✅ Fixed Line */}
-                    <td>{r.phone_number || r.mobile || "N/A"}</td>
-                    
+                    <td>{r.customer_name}</td>
+                    <td>{r.mobile}</td>
                     <td className="date-cell">{displayDate}</td>
                     <td className="time-cell">{r.booking_time}</td>
                     <td>
                       <button
                         className="delete-btn"
+                        // ✅ Only passing ID and Table Number
                         onClick={() => handleDelete(r.id, r.table_number)}
                       >
                         CHECKOUT
