@@ -3,9 +3,8 @@ import "../App.css";
 
 function Reservations({ reservations = [], setReservations }) {
   
-  // 🛠️ DELETE/CHECKOUT Logic (Fixed to use ID)
+  // 🛠️ DELETE Logic
   const handleDelete = async (id, tableNumber) => {
-    // ID check panrom
     if (!id) {
       alert("Error: Reservation ID missing!");
       return;
@@ -14,32 +13,25 @@ function Reservations({ reservations = [], setReservations }) {
     if (!window.confirm(`Checkout Table ${tableNumber}?`)) return;
 
     try {
-      // Backend URL
       const API = process.env.REACT_APP_API_URL || "https://sunny-sparkle-production-af43.up.railway.app";
 
-      // ✅ FIXED: Direct-ah ID-ah anupuvom
       const res = await fetch(`${API}/reserve/${id}`, {
         method: "DELETE",
       });
 
-      let data = {};
-      try { data = await res.json(); } catch (e) {}
-
       if (res.ok) {
-        // UI-la irundhu antha specific ID-ah mattum filter pannalaam
         const updatedReservations = reservations.filter((r) => r.id !== id);
         setReservations(updatedReservations);
         alert("✅ Checked out Successfully!");
       } else {
-        alert("❌ Fail: " + (data.message || "Record not found"));
+        alert("❌ Fail to checkout.");
       }
     } catch (err) {
-      console.error("Delete Error:", err);
       alert("❌ Server is not reachable.");
     }
   };
 
-  // 🚀 SORTING LOGIC
+  // 🚀 SORTING Logic
   const sortedData = [...reservations].sort((a, b) => {
     const dateA = new Date(a.booking_date);
     const dateB = new Date(b.booking_date);
@@ -94,9 +86,9 @@ function Reservations({ reservations = [], setReservations }) {
                 return (
                   <tr key={r.id}>
                     <td className="table-id">Table {r.table_number}</td>
-                    <td>{r.customer_name}</td>
+                    <td>{r.customer_name || "N/A"}</td>
                     
-                    {/* ✅ FIXED: Handled both phone_number and mobile variable names */}
+                    {/* ✅ Fixed Line */}
                     <td>{r.phone_number || r.mobile || "N/A"}</td>
                     
                     <td className="date-cell">{displayDate}</td>
@@ -117,3 +109,7 @@ function Reservations({ reservations = [], setReservations }) {
         </div>
       )}
     </div>
+  );
+}
+
+export default Reservations;
