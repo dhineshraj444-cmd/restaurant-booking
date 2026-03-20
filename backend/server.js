@@ -5,7 +5,7 @@ const cors = require("cors");
 
 const app = express();
 
-// ✅ Inga thaan unga Vercel URL-ah allow panroom
+// ✅ CORS Settings: Vercel and Localhost allow panroom
 app.use(cors({
   origin: ["https://restaurant-booking-teal.vercel.app", "http://localhost:3000"],
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -16,7 +16,7 @@ app.use(express.json());
 
 let db;
 
-/* ✅ INIT DB */
+/* ✅ DATABASE CONNECTION */
 async function initDB() {
   try {
     db = await mysql.createPool({
@@ -36,7 +36,7 @@ async function initDB() {
   }
 }
 
-/* 🧹 CLEAN OLD BOOKINGS */
+/* 🧹 CLEAN OLD BOOKINGS (Daily maintenance) */
 async function cleanOldBookings() {
   if (!db) return;
   try {
@@ -47,31 +47,26 @@ async function cleanOldBookings() {
 /* ✅ HEALTH CHECK */
 app.get("/", (req, res) => res.send("Server + DB working ✅"));
 
-/* 📥 GET ALL RESERVATIONS */
+/* 📥 GET ALL RESERVATIONS (Frontend Compatibility Fix) */
 app.get("/reservations", async (req, res) => {
   try {
     await cleanOldBookings();
+    
+    // Selecting specific columns and formatting date
     const [rows] = await db.execute(`
-      SELECT *, 
-      DATE_FORMAT(booking_date, '%Y-%m-%d') AS booking_date 
+      SELECT id, table_number, customer_name, mobile, 
+      DATE_FORMAT(booking_date, '%Y-%m-%d') AS booking_date, 
+      booking_time 
       FROM reservations 
       ORDER BY booking_date ASC, booking_time ASC
     `);
 
-    const confirmedCount = rows.filter(r => r.payment_status === 'PAID').length;
-    const waitlistCount = rows.filter(r => r.payment_status === 'PENDING').length;
-
-    res.json({
-      reservations: rows,
-      stats: {
-        total: rows.length,
-        confirmed: confirmedCount,
-        waitlist: waitlistCount
-      }
-    });
+    // 🔥 FIX: Directly sending the array so Frontend .map() works!
+    res.json(rows); 
+    
   } catch (err) {
     console.error("Fetch Error:", err);
-    res.status(500).json({ message: "DB error" });
+    res.status(500).json([]); // Error vandha empty array anupuvom to prevent crash
   }
 });
 
@@ -80,20 +75,26 @@ app.post("/reserve", async (req, res) => {
   try {
     const { table_number, customer_name, mobile, booking_date, booking_time, guests_count } = req.body;
     
+    // Check if fields are missing
+    if (!table_number || !customer_name || !mobile || !booking_date || !booking_time) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     const [result] = await db.execute(
       `INSERT INTO reservations 
       (table_number, customer_name, mobile, booking_date, booking_time, guests, payment_status)
       VALUES (?, ?, ?, ?, ?, ?, 'PAID')`,
-      [table_number, customer_name, mobile, booking_date, booking_time, guests_count]
+      [table_number, customer_name, mobile, booking_date, booking_time, guests_count || 1]
     );
 
     res.json({ message: "Reservation successful", insertId: result.insertId });
   } catch (err) {
+    console.error("Insert Error:", err);
     res.status(500).json({ message: "Insert error" });
   }
 });
 
-/* ❌ DELETE RESERVATION */
+/* ❌ DELETE RESERVATION (Checkout Logic) */
 app.delete("/reserve/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -104,6 +105,7 @@ app.delete("/reserve/:id", async (req, res) => {
     }
     res.json({ message: "Deleted successfully" });
   } catch (err) {
+    console.error("Delete Error:", err);
     res.status(500).json({ message: "Delete error" });
   }
 });
