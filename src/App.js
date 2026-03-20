@@ -12,10 +12,11 @@ import About from "./components/About";
 
 function App() {
   const [activePage, setActivePage] = useState("dashboard");
+  const [selectedTable, setSelectedTable] = useState(null);
   const [reservations, setReservations] = useState([]);
   const [hotelName, setHotelName] = useState(() => localStorage.getItem("hotelName") || "Sri Lakshmi Hotel");
   
-  // Submission-ku safe-ah false default veippom
+  // Login status persistence logic
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem("isLoggedIn") === "true");
 
   const API_URL = "https://sunny-sparkle-production-af43.up.railway.app";
@@ -34,7 +35,6 @@ function App() {
     { number: 11, seats: 6, status: "Available" }, { number: 12, seats: 6, status: "Available" },
   ]);
 
-  // Fetch Logic
   useEffect(() => {
     const fetchReservations = async () => {
       try {
@@ -59,21 +59,29 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* 🏠 Customer View */}
         <Route path="/" element={<HomeGateway hotelName={hotelName} />} />
 
+        {/* 🔑 Login View */}
         <Route path="/login" element={
           isLoggedIn ? <Navigate to="/admin" /> : <Login setIsLoggedIn={setIsLoggedIn} setActivePage={setActivePage} />
         } />
 
+        {/* 📅 Booking Page (Customer selection) */}
         <Route path="/book" element={
           <BookingPage 
             hotelName={hotelName} 
             tables={tables} 
             setReservations={setReservations} 
-            reservations={reservations} 
+            reservations={reservations}
+            setSelectedTable={setSelectedTable}
+            selectedTable={selectedTable}
+            setActivePage={setActivePage}
+            activePage={activePage}
           />
         } />
 
+        {/* 👨‍💼 Admin Panel (Protected) */}
         <Route path="/admin" element={
           isLoggedIn ? (
             <div className="app">
