@@ -5,7 +5,13 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+// ✅ Inga thaan unga Vercel URL-ah allow panroom
+app.use(cors({
+  origin: ["https://restaurant-booking-teal.vercel.app", "http://localhost:3000"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 let db;
@@ -41,7 +47,7 @@ async function cleanOldBookings() {
 /* ✅ HEALTH CHECK */
 app.get("/", (req, res) => res.send("Server + DB working ✅"));
 
-/* 📥 GET ALL RESERVATIONS (With Dashboard Stats) */
+/* 📥 GET ALL RESERVATIONS */
 app.get("/reservations", async (req, res) => {
   try {
     await cleanOldBookings();
@@ -52,12 +58,9 @@ app.get("/reservations", async (req, res) => {
       ORDER BY booking_date ASC, booking_time ASC
     `);
 
-    // 📊 Dashboard Stats Logic
-    // Namma code-la currently ellarukum 'PAID' status kudukkurathala confirmed = total aagum
     const confirmedCount = rows.filter(r => r.payment_status === 'PAID').length;
     const waitlistCount = rows.filter(r => r.payment_status === 'PENDING').length;
 
-    // Frontend-ku data + stats rendaiyum anupuroom
     res.json({
       reservations: rows,
       stats: {
@@ -77,7 +80,6 @@ app.post("/reserve", async (req, res) => {
   try {
     const { table_number, customer_name, mobile, booking_date, booking_time, guests_count } = req.body;
     
-    // Default-ah 'PAID' status kudukkurom (Confirmed-ku)
     const [result] = await db.execute(
       `INSERT INTO reservations 
       (table_number, customer_name, mobile, booking_date, booking_time, guests, payment_status)
@@ -91,7 +93,7 @@ app.post("/reserve", async (req, res) => {
   }
 });
 
-/* ❌ DELETE RESERVATION (CHECKOUT) */
+/* ❌ DELETE RESERVATION */
 app.delete("/reserve/:id", async (req, res) => {
   try {
     const { id } = req.params;
